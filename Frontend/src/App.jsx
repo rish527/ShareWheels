@@ -8,6 +8,8 @@ import Login from "./Pages/Login";
 import {Toaster} from "react-hot-toast";
 import {Loader} from "lucide-react";
 import { useAuthStore } from './Store/useAuthStore';
+import Dashboard from './Pages/Dashboard';
+import OwnerRegistration from './Pages/OwnerRegister';
 
 function App() {
 
@@ -27,12 +29,14 @@ function App() {
   }
 
   return (
-    <div>
+    <div className='h-screen bg-base-200'>
       <Navbar />
       <Routes>
         <Route path="/" element={authUser?<Home />:<Navigate to="/login" /> } />
         <Route path='/signup' element={!authUser? <SignUp/>: <Navigate to="/" />} />
         <Route path='/login' element={!authUser? <Login />: <Navigate to="/"/>} />
+        <Route path='/owner-register' element={authUser? <OwnerRegistration /> : <Navigate to="/"/>} />
+        <Route path='/dashboard/*' element={authUser? <Dashboard />: <Navigate to="/"/>} />
       </Routes>
       <Toaster />
     </div>

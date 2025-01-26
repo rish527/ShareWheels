@@ -1,10 +1,12 @@
 import {create} from "zustand"
 import {axiosInstance} from "../lib/axios.js"
 import toast from 'react-hot-toast';
+import { Navigate } from "react-router-dom";
 
 export const useAuthStore=create((set,get)=>({
     authUser:null,
     isSigningUp: false,
+    isRegistering: false,
     isLoggingIn: false,
     isUpdatingProfile:false,
     isCheckingAuth:true,
@@ -52,6 +54,18 @@ export const useAuthStore=create((set,get)=>({
             toast.success("Logged out Successfully");
         } catch (error) {
             toast.error(error.response.data.message)
+        }
+    },
+    ownerRegister: async (data)=>{
+        set({isRegistering:true});
+        try {
+            console.log(data);
+            const res=await axiosInstance.post("/auth/owner-register",data);
+            toast.success("Registeration Request Sent");
+        } catch (error) {
+            toast.error(error.response.data.message);
+        }finally{
+            set({isRegistering:false});
         }
     },
 

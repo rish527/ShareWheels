@@ -2,6 +2,8 @@ import User from "../models/user.model.js"
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { genarateToken } from "../lib/utils.js";
+import Owner from "../models/owner.model.js";
+import cloudinary from "../lib/cloudinary.js";
 
 export const login=async (req,res)=>{
     try {
@@ -23,6 +25,7 @@ export const login=async (req,res)=>{
                 _id:user._id,
                 fullName:user.fullName,
                 email:user.email,
+                role:user.role,
                 profilePic:user.profilePic,
             })
         }
@@ -37,13 +40,16 @@ export const login=async (req,res)=>{
 }
 export const signup=async (req,res)=>{
     try {
-        const {fullName,email,password}= req.body;
+        const {fullName,email,password,phone}= req.body;
         // console.log(req.body);
-        if(!fullName || !email || !password){
+        if(!fullName || !email || !password || !phone){
             return res.status(400).json({message:"Please fill in all fields"})
         }
-        const existing=await User.findOne({email});
-        if(existing) return res.status(400).json({message:"User email Already Exists"});
+        const existingEmail=await User.findOne({email});
+        if(existingEmail) return res.status(400).json({message:"User email Already Exists"});
+
+        const existingPhone=await User.findOne({phone});
+        if(existingPhone) return res.status(400).json({message:"User Phone Number Already Exists"});
 
         if(password.length<6) return res.status(400).json({message:"Password must be at least 6 characters"});
 
@@ -95,3 +101,55 @@ export const checkAuth=(req,res)=>{
         res.status(500).json({ message: "Internal Server Error" });
     }
 }
+
+export const OwnerRegister = async (req, res) => {
+    try {
+      // Fetch the authenticated user from the request
+      const userCalled = req.user;
+  
+      // Validate the user exists
+      const user = await User.findById(userCalled._id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+  
+      // Destructure required fields from the request body
+      const { registrationNumber, carPicture, license, registrationCertificate } = req.body;
+    //   console.log(req.body);
+      // Validate all required fields are provided
+      if (!registrationNumber || !carPicture || !license || !registrationCertificate) {
+        return res.status(400).json({ message: "Please fill in all fields" });
+      }
+      
+      const uploadResponse1=await cloudinary.uploader.upload(carPicture);
+      const carUrl=uploadResponse1.secure_url;
+      const uploadResponse2=await cloudinary.uploader.upload(carPicture);
+      const licenceUrl=uploadResponse2.secure_url;
+      const uploadResponse3=await cloudinary.uploader.upload(carPicture);
+      const cirtificateUrl=uploadResponse3.secure_url;
+
+      // Create a new owner object
+      const owner = new Owner({
+        userId: user._id,
+        carDetails: {
+          registrationNumber,
+          carPicture:carUrl,
+        },
+        documents: {
+          license: licenceUrl,
+          registrationCertificate: cirtificateUrl,
+        },
+      });
+  
+      // Save the owner data to the database
+      await owner.save();
+      console.log("Owner data saved to the database");
+  
+      // Send a success response
+      res.status(201).json({ message: "User requested to be an owner successfully" });
+    } catch (error) {
+      console.error("Error in OwnerRegister controller:", error.message);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  };
+  
